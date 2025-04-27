@@ -88,13 +88,13 @@ extension PublishingPipeline {
         shouldEmptyOutputFolder: Bool,
         output: Path? = nil
     ) throws -> Folder.Group {
-        let root = try resolveRootFolder(withExplicitPath: path)
-
         do {
+            let root = try resolveRootFolder(withExplicitPath: path)
+
             let outputFolder: Folder
             if let outputPath = output {
-                let outputParentFolder = try Folder(path: outputPath.string)
-                outputFolder = try outputParentFolder.createSubfolderIfNeeded(withName: "Output")
+                outputFolder = try Folder(path: outputPath.string)
+                try outputFolder.createSubfolderIfNeeded(withName: ".")
             } else {
                 outputFolder = try root.createSubfolderIfNeeded(withName: "Output")
             }
@@ -118,7 +118,6 @@ extension PublishingPipeline {
                 caches: cacheFolder
             )
         } catch {
-            print(error)
             throw PublishingError(
                 path: path,
                 infoMessage: "Failed to set up root folder structure"
