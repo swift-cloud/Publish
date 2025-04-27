@@ -166,6 +166,7 @@ extension Website {
         deployedUsing deploymentMethod: DeploymentMethod<Self>? = nil,
         additionalSteps: [PublishingStep<Self>] = [],
         plugins: [Plugin<Self>] = [],
+        output: Path? = nil,
         file: StaticString = #file
     ) async throws -> PublishedWebsite<Self> {
         try await publish(
@@ -186,6 +187,7 @@ extension Website {
                 .generateSiteMap(indentedBy: indentation),
                 .unwrap(deploymentMethod, PublishingStep.deploy),
             ],
+            output: output,
             file: file
         )
     }
@@ -199,13 +201,14 @@ extension Website {
     public func publish(
         at path: Path? = nil,
         using steps: [PublishingStep<Self>],
+        output: Path? = nil,
         file: StaticString = #file
     ) async throws -> PublishedWebsite<Self> {
         let pipeline = PublishingPipeline(
             steps: steps,
             originFilePath: Path("\(file)")
         )
-        return try await pipeline.execute(for: self, at: path)
+        return try await pipeline.execute(for: self, at: path, output: output)
     }
 }
 
