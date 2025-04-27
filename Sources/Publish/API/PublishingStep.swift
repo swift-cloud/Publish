@@ -293,7 +293,7 @@ public extension PublishingStep {
     /// - parameter includeFolder: Whether the resource folder itself, or just its
     ///   contents, should be copied. Default: `false`.
     static func copyResources(
-        at originPath: Path = "Resources",
+        at originPath: Path = "Resources/",
         to targetFolderPath: Path? = nil,
         includingFolder includeFolder: Bool = false
     ) -> Self {
