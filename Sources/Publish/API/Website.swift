@@ -173,7 +173,7 @@ extension Website {
             at: path,
             using: [
                 .group(plugins.map(PublishingStep.installPlugin)),
-                .optional(.copyResources(to: "Output/")),
+                .optional(.copyResources()),
                 .addMarkdownFiles(),
                 .sortItems(by: \.date, order: .descending),
                 .group(additionalSteps),

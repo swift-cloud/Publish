@@ -4,11 +4,11 @@
 *  MIT license, see LICENSE file for details
 */
 
+import Codextended
+import Files
 import Foundation
 import Ink
 import Plot
-import Files
-import Codextended
 
 /// Type that represents the context in which a website is being published.
 /// It can be used to manipulate the state of the website in various ways,
@@ -28,7 +28,7 @@ public struct PublishingContext<Site: Website> {
     /// The sections that the website contains.
     public var sections = SectionMap<Site>() { didSet { tagCache.tags = nil } }
     /// The free-form pages that the website contains.
-    public private(set) var pages = [Path : Page]()
+    public private(set) var pages = [Path: Page]()
     /// A set containing all tags that are currently being used website-wide.
     public var allTags: Set<Tag> { tagCache.tags ?? gatherAllTags() }
     /// Any date when the website was last generated.
@@ -38,9 +38,11 @@ public struct PublishingContext<Site: Website> {
     private var tagCache = TagCache()
     private var stepName: String
 
-    internal init(site: Site,
-                  folders: Folder.Group,
-                  firstStepName: String) {
+    internal init(
+        site: Site,
+        folders: Folder.Group,
+        firstStepName: String
+    ) {
         self.site = site
         self.folders = folders
         self.stepName = firstStepName
@@ -52,64 +54,68 @@ public struct PublishingContext<Site: Website> {
     }
 }
 
-public extension PublishingContext {
+extension PublishingContext {
     /// Retrieve a folder at a given path, starting from the website's root folder.
     /// - parameter path: The path to retrieve a folder for.
     /// - throws: An error in case the folder couldn't be found.
-    func folder(at path: Path) throws -> Folder {
-        do { return try folders.root.subfolder(at: path.string) }
-        catch { throw FileIOError(path: path, reason: .folderNotFound) }
+    public func folder(at path: Path) throws -> Folder {
+        do { return try folders.root.subfolder(at: path.string) } catch {
+            throw FileIOError(path: path, reason: .folderNotFound)
+        }
     }
 
     /// Retrieve a file at a given path, starting from the website's root folder.
     /// - parameter path: The path to retrieve a file for.
     /// - throws: An error in case the file couldn't be found.
-    func file(at path: Path) throws -> File {
-        do { return try folders.root.file(at: path.string) }
-        catch { throw FileIOError(path: path, reason: .fileNotFound) }
+    public func file(at path: Path) throws -> File {
+        do { return try folders.root.file(at: path.string) } catch {
+            throw FileIOError(path: path, reason: .fileNotFound)
+        }
     }
 
     /// Retrieve a folder within the website's output folder.
     /// - parameter path: The path to retrieve a folder for.
     /// - throws: An error in case the folder couldn't be found.
-    func outputFolder(at path: Path) throws -> Folder {
-        do { return try folders.output.subfolder(at: path.string) }
-        catch { throw FileIOError(path: path, reason: .folderNotFound) }
+    public func outputFolder(at path: Path) throws -> Folder {
+        do { return try folders.output.subfolder(at: path.string) } catch {
+            throw FileIOError(path: path, reason: .folderNotFound)
+        }
     }
 
     /// Retrieve a file within the website's output folder.
     /// - parameter path: The path to retrieve a file for.
     /// - throws: An error in case the file couldn't be found.
-    func outputFile(at path: Path) throws -> File {
-        do { return try folders.output.file(at: path.string) }
-        catch { throw FileIOError(path: path, reason: .fileNotFound) }
+    public func outputFile(at path: Path) throws -> File {
+        do { return try folders.output.file(at: path.string) } catch {
+            throw FileIOError(path: path, reason: .fileNotFound)
+        }
     }
 
     /// Create a folder at a given path, starting from the website's root folder.
     /// - parameter path: The path to create a folder at.
     /// - throws: An error in case the folder couldn't be created.
-    func createFolder(at path: Path) throws -> Folder {
+    public func createFolder(at path: Path) throws -> Folder {
         try createFolder(at: path, in: folders.root)
     }
 
     /// Create a file at a given path, starting from the website's root folder.
     /// - parameter path: The path to create a file at.
     /// - throws: An error in case the file couldn't be created.
-    func createFile(at path: Path) throws -> File {
+    public func createFile(at path: Path) throws -> File {
         try createFile(at: path, in: folders.root)
     }
 
     /// Create a folder at a given path within the website's output folder.
     /// - parameter path: The path to create a folder at.
     /// - throws: An error in case the folder couldn't be created.
-    func createOutputFolder(at path: Path) throws -> Folder {
+    public func createOutputFolder(at path: Path) throws -> Folder {
         try createFolder(at: path, in: folders.output)
     }
 
     /// Create a file at a given path within the website's output folder.
     /// - parameter path: The path to create a file at.
     /// - throws: An error in case the file couldn't be created.
-    func createOutputFile(at path: Path) throws -> File {
+    public func createOutputFile(at path: Path) throws -> File {
         try createFile(at: path, in: folders.output)
     }
 
@@ -117,8 +123,10 @@ public extension PublishingContext {
     /// - parameter originPath: The path of the folder to copy.
     /// - parameter targetFolderPath: Any specific path to copy the folder to.
     ///   If `nil`, then the folder will be copied to the output folder itself.
-    func copyFolderToOutput(from originPath: Path,
-                            to targetFolderPath: Path? = nil) throws {
+    public func copyFolderToOutput(
+        from originPath: Path,
+        to targetFolderPath: Path? = nil
+    ) throws {
         let folder = try self.folder(at: originPath)
         try copyFolderToOutput(folder, targetFolderPath: targetFolderPath)
     }
@@ -127,8 +135,10 @@ public extension PublishingContext {
     /// - parameter originPath: The path of the file to copy.
     /// - parameter targetFolderPath: Any specific folder path to copy the file to.
     ///   If `nil`, then the file will be copied to the output folder itself.
-    func copyFileToOutput(from originPath: Path,
-                          to targetFolderPath: Path? = nil) throws {
+    public func copyFileToOutput(
+        from originPath: Path,
+        to targetFolderPath: Path? = nil
+    ) throws {
         let file = try self.file(at: originPath)
         try copyFileToOutput(file, targetFolderPath: targetFolderPath)
     }
@@ -141,7 +151,7 @@ public extension PublishingContext {
     /// - parameter outputFolderPath: Any specific subfolder path to copy the output to.
     ///   If `nil`, then the output will be copied to the deployment folder itself.
     /// - Parameter configure: A closure used to configure the folder.
-    func createDeploymentFolder(
+    public func createDeploymentFolder(
         withPrefix prefix: String,
         outputFolderPath: Path? = nil,
         configure: (Folder) throws -> Void
@@ -181,7 +191,7 @@ public extension PublishingContext {
     /// Cache files aren't deleted in between publishing processes.
     /// - parameter name: The name of the cache file to return.
     /// - throws: An error in case a new file couldn't be created.
-    func cacheFile(named name: String) throws -> File {
+    public func cacheFile(named name: String) throws -> File {
         let folderName = stepName.normalized()
         let folder = try folders.caches.createSubfolderIfNeeded(withName: folderName)
         return try folder.createFileIfNeeded(withName: name.normalized())
@@ -190,7 +200,7 @@ public extension PublishingContext {
     /// Return all items within this website, sorted by a given key path.
     /// - parameter sortingKeyPath: The key path to sort the items by.
     /// - parameter order: The order to use when sorting the items.
-    func allItems<T: Comparable>(
+    public func allItems<T: Comparable>(
         sortedBy sortingKeyPath: KeyPath<Item<Site>, T>,
         order: SortOrder = .ascending
     ) -> [Item<Site>] {
@@ -203,7 +213,7 @@ public extension PublishingContext {
 
     /// Return all items that were tagged with a given tag.
     /// - parameter tag: The tag to return all items for.
-    func items(taggedWith tag: Tag) -> [Item<Site>] {
+    public func items(taggedWith tag: Tag) -> [Item<Site>] {
         sections.flatMap { $0.items(taggedWith: tag) }
     }
 
@@ -212,7 +222,7 @@ public extension PublishingContext {
     /// - parameter tag: The tag to return all items for.
     /// - parameter sortingKeyPath: The key path to sort the items by.
     /// - parameter order: The order to use when sorting the items.
-    func items<T: Comparable>(
+    public func items<T: Comparable>(
         taggedWith tag: Tag,
         sortedBy sortingKeyPath: KeyPath<Item<Site>, T>,
         order: SortOrder = .ascending
@@ -224,19 +234,19 @@ public extension PublishingContext {
 
     /// Add an item to the website programmatically.
     /// - parameter item: The item to add.
-    mutating func addItem(_ item: Item<Site>) {
+    public mutating func addItem(_ item: Item<Site>) {
         sections[item.sectionID].addItem(item)
     }
 
     /// Add a page to the website programmatically.
     /// - parameter page: The page to add.
-    mutating func addPage(_ page: Page) {
+    public mutating func addPage(_ page: Page) {
         pages[page.path] = page
     }
 
     /// Mutate all of the website's sections using a closure.
     /// - parameter mutations: The mutations to apply to each section.
-    mutating func mutateAllSections(using mutations: Mutations<Section<Site>>) rethrows {
+    public mutating func mutateAllSections(using mutations: Mutations<Section<Site>>) rethrows {
         for id in sections.ids {
             try mutations(&sections[id])
         }
@@ -248,9 +258,11 @@ public extension PublishingContext {
     /// - parameter mutations: The mutations to apply to the page.
     /// - throws: An error in case the page couldn't be found, or
     ///   if the mutation close itself threw an error.
-    mutating func mutatePage(at path: Path,
-                             matching predicate: Predicate<Page> = .any,
-                             using mutations: Mutations<Page>) throws {
+    public mutating func mutatePage(
+        at path: Path,
+        matching predicate: Predicate<Page> = .any,
+        using mutations: Mutations<Page>
+    ) throws {
         guard var page = pages[path] else {
             throw ContentError(path: path, reason: .pageNotFound)
         }
@@ -275,7 +287,7 @@ public extension PublishingContext {
     }
 }
 
-internal extension PublishingContext {
+extension PublishingContext {
     mutating func generationWillBegin() {
         try? updateLastGenerationDate()
     }
@@ -291,8 +303,10 @@ internal extension PublishingContext {
         )
     }
 
-    func copyFileToOutput(_ file: File,
-                          targetFolderPath: Path?) throws {
+    func copyFileToOutput(
+        _ file: File,
+        targetFolderPath: Path?
+    ) throws {
         try copyLocationToOutput(
             file,
             targetFolderPath: targetFolderPath,
@@ -300,8 +314,10 @@ internal extension PublishingContext {
         )
     }
 
-    func copyFolderToOutput(_ folder: Folder,
-                            targetFolderPath: Path?) throws {
+    func copyFolderToOutput(
+        _ folder: Folder,
+        targetFolderPath: Path?
+    ) throws {
         try copyLocationToOutput(
             folder,
             targetFolderPath: targetFolderPath,
@@ -310,12 +326,12 @@ internal extension PublishingContext {
     }
 }
 
-private extension PublishingContext {
-    final class TagCache {
+extension PublishingContext {
+    fileprivate final class TagCache {
         var tags: Set<Tag>?
     }
 
-    mutating func updateLastGenerationDate() throws {
+    fileprivate mutating func updateLastGenerationDate() throws {
         let fileName = "lastGenerationDate"
         let newString = String(Date().timeIntervalSince1970)
 
@@ -333,7 +349,7 @@ private extension PublishingContext {
         }
     }
 
-    func gatherAllTags() -> Set<Tag> {
+    fileprivate func gatherAllTags() -> Set<Tag> {
         var tags = Set<Tag>()
 
         for section in sections {
@@ -344,7 +360,7 @@ private extension PublishingContext {
         return tags
     }
 
-    func copyLocationToOutput<T: Files.Location>(
+    fileprivate func copyLocationToOutput<T: Files.Location>(
         _ location: T,
         targetFolderPath: Path?,
         errorReason: FileIOError.Reason
@@ -354,14 +370,16 @@ private extension PublishingContext {
         }
 
         do {
-            try location.copy(to: targetFolder ?? folders.output)
+            let folder = targetFolder ?? folders.output
+            let adjustedFolder = try Folder(path: folder.path + "/")
+            try location.copy(to: adjustedFolder)
         } catch {
             let path = Path(location.path(relativeTo: folders.root))
             throw FileIOError(path: path, reason: errorReason)
         }
     }
 
-    func createFolder(at path: Path, in folder: Folder) throws -> Folder {
+    fileprivate func createFolder(at path: Path, in folder: Folder) throws -> Folder {
         do {
             return try folder.createSubfolderIfNeeded(at: path.string)
         } catch {
@@ -370,7 +388,7 @@ private extension PublishingContext {
         }
     }
 
-    func createFile(at path: Path, in folder: Folder) throws -> File {
+    fileprivate func createFile(at path: Path, in folder: Folder) throws -> File {
         do {
             return try folder.createFileIfNeeded(at: path.string)
         } catch {
