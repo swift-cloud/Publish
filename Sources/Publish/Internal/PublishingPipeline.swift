@@ -92,12 +92,9 @@ extension PublishingPipeline {
             let root = try resolveRootFolder(withExplicitPath: path)
 
             let outputFolder: Folder
-            if let outputPath = output {
-                outputFolder = try Folder(path: outputPath.string)
-                try? FileManager.default.createDirectory(
-                    atPath: outputPath.string,
-                    withIntermediateDirectories: true
-                )
+            if let path = output {
+                let outputParentFolder = try Folder(path: path.string)
+                outputFolder = try outputParentFolder.createSubfolderIfNeeded(withName: "Output")
             } else {
                 outputFolder = try root.createSubfolderIfNeeded(withName: "Output")
             }
