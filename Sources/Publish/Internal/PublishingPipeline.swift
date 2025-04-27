@@ -94,7 +94,7 @@ extension PublishingPipeline {
             let outputFolder: Folder
             if let outputPath = output {
                 outputFolder = try Folder(path: outputPath.string)
-                try outputFolder.createSubfolderIfNeeded(withName: ".")
+                try outputFolder.createSubfolderIfNeeded(withName: ".temp")
             } else {
                 outputFolder = try root.createSubfolderIfNeeded(withName: "Output")
             }
