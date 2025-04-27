@@ -7,7 +7,7 @@
 import Files
 
 #if canImport(Cocoa)
-import Cocoa
+    import Cocoa
 #endif
 
 internal struct PublishingPipeline<Site: Website> {
@@ -16,12 +16,15 @@ internal struct PublishingPipeline<Site: Website> {
 }
 
 extension PublishingPipeline {
-    func execute(for site: Site, at path: Path?) async throws -> PublishedWebsite<Site> {
+    func execute(for site: Site, at path: Path?, output: Path? = nil) async throws
+        -> PublishedWebsite<Site>
+    {
         let stepKind = resolveStepKind()
 
         let folders = try setUpFolders(
             withExplicitRootPath: path,
-            shouldEmptyOutputFolder: stepKind == .generation
+            shouldEmptyOutputFolder: stepKind == .generation,
+            output: output
         )
 
         let steps = self.steps.flatMap { step in
@@ -31,8 +34,8 @@ extension PublishingPipeline {
         guard let firstStep = steps.first else {
             throw PublishingError(
                 infoMessage: """
-                \(site.name) has no \(stepKind.rawValue) steps.
-                """
+                    \(site.name) has no \(stepKind.rawValue) steps.
+                    """
             )
         }
 
@@ -72,28 +75,33 @@ extension PublishingPipeline {
     }
 }
 
-private extension PublishingPipeline {
-    typealias Step = PublishingStep<Site>
+extension PublishingPipeline {
+    fileprivate typealias Step = PublishingStep<Site>
 
-    struct RunnableStep {
+    fileprivate struct RunnableStep {
         let name: String
         let closure: Step.Closure
     }
 
-    func setUpFolders(withExplicitRootPath path: Path?,
-                      shouldEmptyOutputFolder: Bool) throws -> Folder.Group {
+    fileprivate func setUpFolders(
+        withExplicitRootPath path: Path?,
+        shouldEmptyOutputFolder: Bool,
+        output: Path? = nil
+    ) throws -> Folder.Group {
         let root = try resolveRootFolder(withExplicitPath: path)
-        let outputFolderName = "Output"
+
+        let outputFolder: Folder
+        if let outputPath = output {
+            outputFolder = try Folder(path: outputPath.string)
+        } else {
+            outputFolder = try root.createSubfolderIfNeeded(withName: "output")
+        }
 
         if shouldEmptyOutputFolder {
-            try? root.subfolder(named: outputFolderName).empty(includingHidden: true)
+            try? outputFolder.empty(includingHidden: true)
         }
 
         do {
-            let outputFolder = try root.createSubfolderIfNeeded(
-                withName: outputFolderName
-            )
-
             let internalFolder = try root.createSubfolderIfNeeded(
                 withName: ".publish"
             )
@@ -116,7 +124,7 @@ private extension PublishingPipeline {
         }
     }
 
-    func resolveRootFolder(withExplicitPath path: Path?) throws -> Folder {
+    fileprivate func resolveRootFolder(withExplicitPath path: Path?) throws -> Folder {
         if let path = path {
             do {
                 return try Folder(path: path.string)
@@ -132,13 +140,13 @@ private extension PublishingPipeline {
         return try originFile.resolveSwiftPackageFolder()
     }
 
-    func resolveStepKind() -> Step.Kind {
+    fileprivate func resolveStepKind() -> Step.Kind {
         let deploymentFlags: Set<String> = ["--deploy", "-d"]
         let shouldDeploy = CommandLine.arguments.contains(where: deploymentFlags.contains)
         return shouldDeploy ? .deployment : .generation
     }
 
-    func runnableSteps(ofKind kind: Step.Kind, from step: Step) -> [RunnableStep] {
+    fileprivate func runnableSteps(ofKind kind: Step.Kind, from step: Step) -> [RunnableStep] {
         switch step.kind {
         case .system, kind: break
         default: return []
@@ -154,11 +162,11 @@ private extension PublishingPipeline {
         }
     }
 
-    func postNotification(named name: String) {
+    fileprivate func postNotification(named name: String) {
         #if canImport(Cocoa)
-        let center = DistributedNotificationCenter.default()
-        let name = Notification.Name(rawValue: "Publish.\(name)")
-        center.post(Notification(name: name))
+            let center = DistributedNotificationCenter.default()
+            let name = Notification.Name(rawValue: "Publish.\(name)")
+            center.post(Notification(name: name))
         #endif
     }
 }

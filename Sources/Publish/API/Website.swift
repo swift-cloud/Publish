@@ -4,12 +4,13 @@
 *  MIT license, see LICENSE file for details
 */
 
+import Dispatch
 import Foundation
 import Plot
-import Dispatch
 
 /// Protocol that all `Website.SectionID` implementations must conform to.
-public protocol WebsiteSectionID: Decodable, Hashable, CaseIterable, RawRepresentable where RawValue == String {}
+public protocol WebsiteSectionID: Decodable, Hashable, CaseIterable, RawRepresentable
+where RawValue == String {}
 /// Protocol that all `Website.ItemMetadata` implementations must conform to.
 public typealias WebsiteItemMetadata = Decodable & Hashable
 
@@ -45,14 +46,14 @@ public protocol Website {
 
 // MARK: - Defaults
 
-public extension Website {
-    var favicon: Favicon? { .init() }
-    var tagHTMLConfig: TagHTMLConfiguration? { .default }
+extension Website {
+    public var favicon: Favicon? { .init() }
+    public var tagHTMLConfig: TagHTMLConfiguration? { .default }
 }
 
 // MARK: - Publishing
 
-public extension Website {
+extension Website {
     /// Publish this website using a default pipeline. To build a completely
     /// custom pipeline, use the `publish(using:)` method.
     /// - parameter theme: The HTML theme to generate the website using.
@@ -67,15 +68,18 @@ public extension Website {
     /// - parameter file: The file that this method is called from (auto-inserted).
     /// - parameter line: The line that this method is called from (auto-inserted).
     @discardableResult
-    func publish(withTheme theme: Theme<Self>,
-                 indentation: Indentation.Kind? = nil,
-                 at path: Path? = nil,
-                 rssFeedSections: Set<SectionID> = Set(SectionID.allCases),
-                 rssFeedConfig: RSSFeedConfiguration? = .default,
-                 deployedUsing deploymentMethod: DeploymentMethod<Self>? = nil,
-                 additionalSteps: [PublishingStep<Self>] = [],
-                 plugins: [Plugin<Self>] = [],
-                 file: StaticString = #file) throws -> PublishedWebsite<Self> {
+    public func publish(
+        withTheme theme: Theme<Self>,
+        indentation: Indentation.Kind? = nil,
+        at path: Path? = nil,
+        rssFeedSections: Set<SectionID> = Set(SectionID.allCases),
+        rssFeedConfig: RSSFeedConfiguration? = .default,
+        deployedUsing deploymentMethod: DeploymentMethod<Self>? = nil,
+        additionalSteps: [PublishingStep<Self>] = [],
+        plugins: [Plugin<Self>] = [],
+        output: Path? = nil,
+        file: StaticString = #file
+    ) throws -> PublishedWebsite<Self> {
         try publish(
             at: path,
             using: [
@@ -92,8 +96,9 @@ public extension Website {
                     )
                 },
                 .generateSiteMap(indentedBy: indentation),
-                .unwrap(deploymentMethod, PublishingStep.deploy)
+                .unwrap(deploymentMethod, PublishingStep.deploy),
             ],
+            output: output,
             file: file
         )
     }
@@ -104,9 +109,12 @@ public extension Website {
     /// - parameter file: The file that this method is called from (auto-inserted).
     /// - parameter line: The line that this method is called from (auto-inserted).
     @discardableResult
-    func publish(at path: Path? = nil,
-                 using steps: [PublishingStep<Self>],
-                 file: StaticString = #file) throws -> PublishedWebsite<Self> {
+    public func publish(
+        at path: Path? = nil,
+        using steps: [PublishingStep<Self>],
+        output: Path? = nil,
+        file: StaticString = #file
+    ) throws -> PublishedWebsite<Self> {
         let pipeline = PublishingPipeline(
             steps: steps,
             originFilePath: Path("\(file)")
@@ -115,22 +123,26 @@ public extension Website {
         let semaphore = DispatchSemaphore(value: 0)
         var result: Result<PublishedWebsite<Self>, Error>?
         let completionHandler = { result = $0 }
-        
+
         Task {
             do {
-                let website = try await pipeline.execute(for: self, at: path)
+                let website = try await pipeline.execute(
+                    for: self,
+                    at: path,
+                    output: output
+                )
                 completionHandler(.success(website))
             } catch {
                 completionHandler(.failure(error))
             }
-            
+
             semaphore.signal()
         }
-        
+
         semaphore.wait()
         return try result!.get()
     }
-    
+
     /// Publish this website using a default pipeline. To build a completely
     /// custom pipeline, use the `publish(using:)` method.
     /// - parameter theme: The HTML theme to generate the website using.
@@ -145,15 +157,17 @@ public extension Website {
     /// - parameter file: The file that this method is called from (auto-inserted).
     /// - parameter line: The line that this method is called from (auto-inserted).
     @discardableResult
-    func publish(withTheme theme: Theme<Self>,
-                 indentation: Indentation.Kind? = nil,
-                 at path: Path? = nil,
-                 rssFeedSections: Set<SectionID> = Set(SectionID.allCases),
-                 rssFeedConfig: RSSFeedConfiguration? = .default,
-                 deployedUsing deploymentMethod: DeploymentMethod<Self>? = nil,
-                 additionalSteps: [PublishingStep<Self>] = [],
-                 plugins: [Plugin<Self>] = [],
-                 file: StaticString = #file) async throws -> PublishedWebsite<Self> {
+    public func publish(
+        withTheme theme: Theme<Self>,
+        indentation: Indentation.Kind? = nil,
+        at path: Path? = nil,
+        rssFeedSections: Set<SectionID> = Set(SectionID.allCases),
+        rssFeedConfig: RSSFeedConfiguration? = .default,
+        deployedUsing deploymentMethod: DeploymentMethod<Self>? = nil,
+        additionalSteps: [PublishingStep<Self>] = [],
+        plugins: [Plugin<Self>] = [],
+        file: StaticString = #file
+    ) async throws -> PublishedWebsite<Self> {
         try await publish(
             at: path,
             using: [
@@ -170,21 +184,23 @@ public extension Website {
                     )
                 },
                 .generateSiteMap(indentedBy: indentation),
-                .unwrap(deploymentMethod, PublishingStep.deploy)
+                .unwrap(deploymentMethod, PublishingStep.deploy),
             ],
             file: file
         )
     }
-    
+
     /// Publish this website using a custom pipeline.
     /// - parameter path: Any specific path to generate the website at.
     /// - parameter steps: The steps to use to form the website's publishing pipeline.
     /// - parameter file: The file that this method is called from (auto-inserted).
     /// - parameter line: The line that this method is called from (auto-inserted).
     @discardableResult
-    func publish(at path: Path? = nil,
-                 using steps: [PublishingStep<Self>],
-                 file: StaticString = #file) async throws -> PublishedWebsite<Self> {
+    public func publish(
+        at path: Path? = nil,
+        using steps: [PublishingStep<Self>],
+        file: StaticString = #file
+    ) async throws -> PublishedWebsite<Self> {
         let pipeline = PublishingPipeline(
             steps: steps,
             originFilePath: Path("\(file)")
@@ -195,41 +211,41 @@ public extension Website {
 
 // MARK: - Paths and URLs
 
-public extension Website {
+extension Website {
     /// The path for the website's tag list page.
-    var tagListPath: Path {
+    public var tagListPath: Path {
         tagHTMLConfig?.basePath ?? .defaultForTagHTML
     }
 
     /// Return the relative path for a given section ID.
     /// - parameter sectionID: The section ID to return a path for.
-    func path(for sectionID: SectionID) -> Path {
+    public func path(for sectionID: SectionID) -> Path {
         Path(sectionID.rawValue)
     }
 
     /// Return the relative path for a given tag.
     /// - parameter tag: The tag to return a path for.
-    func path(for tag: Tag) -> Path {
+    public func path(for tag: Tag) -> Path {
         let basePath = tagHTMLConfig?.basePath ?? .defaultForTagHTML
         return basePath.appendingComponent(tag.normalizedString())
     }
 
     /// Return the absolute URL for a given tag.
     /// - parameter tag: The tag to return a URL for.
-    func url(for tag: Tag) -> URL {
+    public func url(for tag: Tag) -> URL {
         url(for: path(for: tag))
     }
 
     /// Return the absolute URL for a given path.
     /// - parameter path: The path to return a URL for.
-    func url(for path: Path) -> URL {
+    public func url(for path: Path) -> URL {
         guard !path.string.isEmpty else { return url }
         return url.appendingPathComponent(path.string)
     }
 
     /// Return the absolute URL for a given location.
     /// - parameter location: The location to return a URL for.
-    func url(for location: Location) -> URL {
+    public func url(for location: Location) -> URL {
         url(for: location.path)
     }
 }
